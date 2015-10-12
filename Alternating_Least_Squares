@@ -1,4 +1,4 @@
-#This code uses Alternating Least Squares to predict the empty values of our User by Movie matrix to 
+#This code uses Alternating Least Squares to predict the empty values of our User by Movie matrix 
 
 
 import numpy as np
