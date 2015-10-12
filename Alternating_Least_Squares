@@ -1,0 +1,140 @@
+#This code uses Alternating Least Squares to predict the empty values of our User by Movie matrix to 
+
+
+import numpy as np
+import numpy.matlib
+import math
+import scipy as sp
+from scipy import linalg
+import random
+
+
+#Upload the training and testing data
+training_data=np.loadtxt('/Users/williamburke/Desktop/training.txt') #Change to the location of your files
+testing_data=np.loadtxt('/Users/williamburke/Desktop/testing.txt')#Change to the location of your files
+
+#initialize our training and testing matrices 
+training = np.zeros((1682,943), dtype = np.int)
+testing = np.zeros((1682,943), dtype = np.int)
+
+for row in training_data:
+    user = row[0]
+    movie = row[1]
+    rating = row[2]
+    training[movie-1,user-1] = rating
+    training_data_List.append([user,movie,rating])
+    
+    
+def RSME(training1, testing_data1):
+    i = 0
+    sum = 0
+    elementDifference = 0
+    for row in testing_data1:
+        user = row[0].astype(int)
+        movie = row[1].astype(int)
+        true_rating = row[2].astype(int)
+        i = i + 1
+        elementDifference =  int(true_rating) - int(training1[movie-1,user-1])
+        elementDifference = elementDifference**2
+        sum = sum + elementDifference
+    sum = (sum / float(i))
+    sum = math.sqrt(sum)
+    return sum
+
+
+
+r= 20
+    
+H = np.matlib.rand(1682,r)*2 #np.zeros((1682,r), dtype = np.int)
+W = np.matlib.rand(r,943)*2 #np.zeros((r,943), dtype = np.int)
+
+
+A = training
+
+k = 1
+K = 50
+
+def f(A,H,W):
+    return 0.5*np.linalg.norm(A - np.inner(H,np.transpose(W)))
+
+#def f_lambda(A,H,W):
+#    Lambda = 1
+#    omega = 90000
+#    sum = np.sum(((A) - np.dot(H,np.transpose(W)))**2 + Lambda*(np.linalg.norm(H)**2 + np.linalg.norm(W)**2))
+#    return 0.5*sum/float(omega)
+
+while k < K:
+    # Store old values to use to determine if our solution is converging
+    W_old = W 
+    H_old = H
+    u,s,v = sp.linalg.svd(W, full_matrices=0) #Decompose W to solve for pseudoinverse of W
+    s = np.diag(s) 
+    W_Plus = np.dot(np.dot(np.transpose(v),np.linalg.inv(s)),np.transpose(u)) # Pseudoinverse of W
+
+    #print W_Plus.shape
+    H = np.dot(A, W_Plus)
+
+
+    u,s,v = sp.linalg.svd(H, full_matrices=0) #Decompose new H to solve for pseudoinverse of W
+    s = np.diag(s)
+    H_Plus = np.dot(np.dot(np.transpose(v),np.linalg.inv(s)),np.transpose(u)) # pseudoinverse of H
+    W = np.dot(np.transpose(A),np.transpose(H_Plus))
+    k = k + 1
+    W = np.transpose(W)
+    
+    #break from the code and report k value if our solution converges
+    if f(A,H_old,W_old) - f(A,H,W) < .00000001:
+        print "Broke from loop at k =  ", k
+        break
+    
+
+# tweak our final solution for better results
+    
+i = 0
+j = 0
+Prediction = np.dot(H,W)
+
+while i < 1682:
+    j=0
+    while j < 943:
+        
+        Prediction[i,j] = Prediction[i,j] + 2.6
+        
+        if Prediction[i,j] > 5:
+            Prediction[i,j] = 4 #random.randint(3,5)
+            
+        if Prediction[i,j] < 1:
+            Prediction[i,j] = 1 #random.randint(1,5)
+            
+        Prediction[i,j] = np.rint(Prediction[i,j]) # round to the nearest integer
+        
+ 
+        j = j + 1
+    i = i + 1
+
+print "RSME testing :", RSME(Prediction,testing_data)
+print "RSME training:", RSME(Prediction,training_data)
+
+
+#This section was used to create prediction files for homework submission
+#=====================================================================
+
+#Prediction_data = open("Prediction_ALS_training.txt", "w")
+#for row in training_data:
+#    user = int(row[0])
+#    movie = int(row[1])
+#    rating = int(Prediction[movie-1,user-1])
+#    timeStamp = int(row[3])
+#    Prediction_datas=[user,movie,rating,timeStamp]
+#    Prediction_data.write((str(user)+str("	") + str(movie)+str("	") +str(rating)+str("	") +str(timeStamp) + "\n"))
+#Prediction_data.close()
+
+#Prediction_data = open("Prediction_ALS_testing.txt", "w")
+#for row in testing_data:
+#    user = int(row[0])
+#    movie = int(row[1])
+#    rating = int(Prediction[movie-1,user-1])
+#    timeStamp = int(row[3])
+#    Prediction_datas=[user,movie,rating,timeStamp]
+#    Prediction_data.write((str(user)+str("	") + str(movie)+str("	") +str(rating)+str("	") +str(timeStamp) + "\n"))
+#Prediction_data.close()
